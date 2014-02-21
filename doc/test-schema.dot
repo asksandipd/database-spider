@@ -1,0 +1,13 @@
+digraph graphname {
+	rotate = 90
+	ba -> a;
+	bb -> a;
+	bc -> a;
+	bc -> a;
+	ca -> ba;
+	ca -> bb;
+	ya -> x;
+	yb -> x;
+	z -> bb;
+	z -> ya;
+}

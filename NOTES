@@ -1,0 +1,120 @@
+Here's where I'll document trouble spots with understanding Clojure.
+
+Language
+  
+  Should I use maps, defstruct, or defrecord?
+
+  OK, defrecord.  Now, where's source code that uses it?  Not in clojure-contrib.
+
+  What's defprotocol really for?  Where's some source that uses it?
+    clojure/contrib/io.clj
+    contrib/json.clj
+    http://github.com/Chouser/finger-tree/blob/master/finger_tree.clj
+  OK, I kind of get it.  Things that implement a protocol all have a required first argument, the "this" argument.
+  So protocols are really a way of defining functions that specialized on the first argument, which may be a Java class
+  or something defined by defrecord or deftype.
+
+  defrecord creates a java.lang.Class
+
+  REPL gets a lot easier with pprint:
+    (require 'clojure.pprint)
+    (use 'clojure.pprint)
+    (pprint my-map)
+
+  How to you roll up a table?  How do I transform have to want?
+
+    (def have '((:bob   :beer)
+                (:bob   :bread)
+                (:alice :apples)
+                (:carol :crisps)
+                (:carol :cake)
+                (:carol :cookies)))
+    
+    (def want {:bob   #{:beer :bread}
+               :alice #{:apples}
+               :carol #{:crisps :cake :cookies}})
+
+    (defn pairs-to-map-of-sets
+      "Transform the list of pairs I have to the map I want."
+      ([pairs] (sideways pairs {}))
+      ([pairs acc]
+         (letfn [(insert-pair
+                  [pair map]
+                  (let [[k v] pair
+                        place (conj (or (map k) #{}) v)]
+                    (conj map {k place})))]
+           (if (empty? pairs)
+             acc
+             (recur (rest pairs) (insert-pair (first pairs) acc))))))
+
+  Destructuring
+    First, I forgot that destructuring existed, and did it by hand:
+      (let [left (first pair)
+            right (second pair)]
+        (stuff left right))
+    instead of:
+      (let [[left right] pair]
+        (stuff left right))
+    Then I had to learn where you can use it, which seems to be in let, loop, and for.
+    Still wondering if there are other places that destructure.
+
+Libraries
+
+  clojure.contrib.sql
+
+    All the examples for with-query-results are about side-effects.
+    Typically, printing a row.  It took me forever to figure out that
+    the result-set argument to the macro is really a Cons.  And that I
+    had to do something explicit like 
+      (reduce conj '() result-set)
+    to avoid the "This ResultSet is closed" exception.    
+
+    How do I get a persistent connection?  Do people just use with-connection
+    for everything?
+  
+
+Build Environment
+
+  Lein
+
+    Where do you put jar files that you get from random places?
+    For example, I found postgresql-8.4-701.jdbc3.jar somewhere
+    but it's not in project.clj so I have to be careful to not run
+    "lein deps" and delete it.  Do I need to understand Maven too?
+
+    Hmmm, maybe "checkout dependencies" does the trick:
+
+      <ApeShot> technomancy: I guess the source of this question is thus:  I work on
+      	  several projects, and each wants to use an sort of continuously
+      	  evolving set of libraries.
+      <technomancy> ApeShot: look for the "checkout dependencies" feature
+      <seancorfield> lein new myproject; cd myproject; lein deps
+      <technomancy> ApeShot: can't remember if it's in the tutorial or the readme,
+      	      but it's designed for that use case
+      <bobo_> technomancy: is that documented somewhere? except for its existance
+      <ApeShot> technomancy: ok
+      <technomancy> bobo_: lightly-documented, I think
+      <technomancy> but on the other hand, there's not a lot to it; it's easy to set
+      	      up and should just work.
+      <seancorfield> "If you create a directory called checkouts in your project
+      	       root and symlink some other projects into it, Leiningen will
+      	       allow you to hack on them in parallel. That means changes in
+      	       the dependency will be visible in the main project without
+      	       having to go through the whole
+      	       install/switch-projects/deps/restart-swank cycle"
+      <seancorfield> README > FAQ
+      <ApeShot> seancorfield: So by this technique, I should create a "apeshotlib"
+      	  project, even if I never hack on it directly.
+      <ApeShot> And symlink it into checkouts
+      <technomancy> ApeShot: right; in most cases you have one project that depends
+      	      on all the others.
+      <technomancy> if you don't, you can create a dummy project
+      * technomancy ponders releasing 1.3.1 tomorrow
+
+
+
+   
+Postgres 
+  ./postgresql_autodoc -d cnuapp_dev -h parasite -p 5432 -u cnuapp --password=cnuapp -l $PWD -t dot
+
+

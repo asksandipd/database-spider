@@ -1,0 +1,43 @@
+I've been thinking about the problem of unindexed foreign keys.  
+I think I may have a solution that doesn't involve creating indices.
+That's because some foreign keys are redundant, at least for the purposes of collecting a customer's object graph.
+
+A good example is mef.results, with 20 foreign keys, two of which are indexed: customer_id and input_id.
+The 18 unindexed foreign keys are unusable in a where clause, but I really don't need to use them that way.
+If selecting mef.results by customer_id succeeds, selecting by any other foreign key is unproductive.
+
+(It also costs in database access, memory consumption, and the processing time spent removing duplicate rows.)
+
+If I can detect foreign keys that are redundant, I can save a lot of time on the downward traversal, and (maybe)
+avoid having new indices created.  
+
+N.B. The foreign keys that aren't used on the downward traversal are still needed for the upward phase, where
+we ensure that we've collected any otherwise unvisited ancestors.  Fortunately, the primary keys that the foreign
+keys reference *are* indexed.
+
+I haven't started thinking about how to detect redundant foreign keys, but the information to do so is all 
+available in the dependencies table.
+
+I'd appreciate your thoughts.
+
+Regards,
+
+
+Craig Ludington
+
+
+
+
+
+
+
+
+
+If there exists a path, consisting only of non-null constraints, to a table,
+then any other path to that table can be safely removed.
+
+
+
+
+
+
